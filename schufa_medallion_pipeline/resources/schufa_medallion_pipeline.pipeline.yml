@@ -1,0 +1,16 @@
+resources:
+  pipelines:
+    schufa_medallion_pipeline:
+      name: Schufa Medallion Pipeline
+      configuration:
+        "pipelines.trigger.interval": "30 seconds"
+      libraries:
+        - notebook:
+            path: ../src/schufa_medallion_pipeline/Schufa Medallion Pipeline.ipynb
+      catalog: test
+      channel: CURRENT
+      continuous: false
+      photon: true
+      root_path: ../src/schufa_medallion_pipeline
+      schema: schufa_mock
+      serverless: true
