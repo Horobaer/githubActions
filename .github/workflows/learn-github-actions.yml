@@ -1,21 +1,32 @@
 name: learn-github-actions
 run-name: ${{ github.actor }} is learning GitHub Actions
+# Start this workflow automatically whenever a commit is pushed.
 on: [push]
 jobs:
+  # A job groups steps that run together on the same runner.
   check-bats-version:
+    # GitHub provides a fresh Ubuntu virtual machine for this job.
     runs-on: ubuntu-latest
     steps:
+      # Download the repository so subsequent steps can use its files.
       - uses: actions/checkout@v6
+      # Install Node.js, which is needed for Node-based tools.
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
+      # Install Bats, the Bash Automated Testing System.
       - run: npm install -g bats
+      # Print the Bats version to confirm that it is installed.
       - run: bats -v
-      # lets see if we can run a bats test
+      # Install the Databricks CLI so Databricks commands are available.
       - uses: databricks/setup-cli@main
       - name: Update Databricks repo
+        # Environment values are exposed only to this step.
         env:
+          # Repository variable containing the Databricks workspace URL.
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          # GitHub secrets protect the service-principal credentials.
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+        # Update the Databricks repo to track the main Git branch.
         run: databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
