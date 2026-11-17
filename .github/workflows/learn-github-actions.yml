@@ -26,7 +26,7 @@ jobs:
           # Repository variable containing the Databricks workspace URL.
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
           # GitHub secrets protect the service-principal credentials.
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
         # Update the Databricks repo to track the main Git branch.
         run: databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
