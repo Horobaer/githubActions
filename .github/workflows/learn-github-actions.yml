@@ -29,4 +29,17 @@ jobs:
           DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
         # Update the Databricks repo to track the main Git branch.
-        run: databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
+        run: |
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
+            exit 1
+          fi
+          if [ -z "$DATABRICKS_CLIENT_ID" ]; then
+            echo "Missing GitHub Actions secret: CLIENT_ID_FIRSTSERVICEPRINCIPAL"
+            exit 1
+          fi
+          if [ -z "$DATABRICKS_CLIENT_SECRET" ]; then
+            echo "Missing GitHub Actions secret: DBX_SECRET_FIRSTSERVICEPRINCIPAL"
+            exit 1
+          fi
+          databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
