@@ -12,3 +12,4 @@ jobs:
       - run: npm install -g bats
       - run: bats -v
       # lets see if we can run a bats test
+      - run: databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
