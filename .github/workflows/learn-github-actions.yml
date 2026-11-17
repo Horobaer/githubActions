@@ -42,4 +42,6 @@ jobs:
             echo "Missing GitHub Actions secret: DBX_SECRET_FIRSTSERVICEPRINCIPAL"
             exit 1
           fi
-          databricks repos update /Workspace/Users/horobaer@gmail.com/githubActions --branch main
+          databricks repos update /Workspace/githubActions --branch main
+
+          
