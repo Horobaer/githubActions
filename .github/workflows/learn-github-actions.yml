@@ -29,7 +29,7 @@ jobs:
           DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
         # Update the Databricks repo to track the main Git branch!
-        # das hier kann als geheimer Chat fungieren - right?
+        # das hier kann als geheimer Chat fungieren - right? HALLO hier spricht JONTE
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
             echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
