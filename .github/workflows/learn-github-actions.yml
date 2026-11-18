@@ -28,7 +28,7 @@ jobs:
           # GitHub secrets protect the service-principal credentials.
           DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
-        # Update the Databricks repo to track the main Git branch.
+        # Update the Databricks repo to track the main Git branch!
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
             echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
