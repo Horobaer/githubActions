@@ -7,6 +7,13 @@ jobs:
   check-bats-version:
     # GitHub provides a fresh Ubuntu virtual machine for this job.
     runs-on: ubuntu-latest
+    # Databricks auth shared by all steps of this job.
+    env:
+      # Repository variable containing the Databricks workspace URL.
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      # GitHub secrets protect the service-principal credentials.
+      DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
     steps:
       # Download the repository so subsequent steps can use its files.
       - uses: actions/checkout@v6
@@ -21,13 +28,6 @@ jobs:
       # Install the Databricks CLI so Databricks commands are available.
       - uses: databricks/setup-cli@main
       - name: Update Databricks repo
-        # Environment values are exposed only to this step.
-        env:
-          # Repository variable containing the Databricks workspace URL.
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
-          # GitHub secrets protect the service-principal credentials.
-          DATABRICKS_CLIENT_ID: ${{ secrets.CLIENT_ID_FIRSTSERVICEPRINCIPAL }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DBX_SECRET_FIRSTSERVICEPRINCIPAL }}
         # Update the Databricks repo to track the main Git branch!
         # das hier kann als geheimer Chat fungieren - right? HALLO hier spricht JONTE mit Papa
         run: |
@@ -44,5 +44,11 @@ jobs:
             exit 1
           fi
           databricks repos update /Workspace/githubActions --branch main
+
+      # Credentials are validated in the "Update Databricks repo" step above;
+      # if they are missing, that step fails and this one never runs.
+      - name: Deliver addOneBronceEntry job
+        # --wait makes the step fail if the job fails.
+        run: databricks jobs run-now --job-id 252738613689179 --wait
 
           
