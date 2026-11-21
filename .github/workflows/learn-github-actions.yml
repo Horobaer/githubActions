@@ -64,7 +64,7 @@ jobs:
       # Credentials are validated in the "Update Databricks repo" step above;
       # if they are missing, that step fails and this one never runs.
       - name: Deliver addOneBronceEntry job
-        # --wait makes the step fail if the job fails.
-        run: databricks jobs run-now 252738613689179 --wait
+        # The CLI waits for completion by default and fails if the run fails.
+        run: databricks jobs run-now 252738613689179
 
           
