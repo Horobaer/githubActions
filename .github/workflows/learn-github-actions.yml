@@ -1,12 +1,12 @@
 name: learn-github-actions
 run-name: ${{ github.actor }} is learning GitHub Actions
-# Deploy the matching Databricks branch whenever one of these branches is pushed.
+# Deploy dev/test targets from their branches and prod from main.
 on:
   push:
     branches:
+      - main
       - dev
       - test
-      - prod
 jobs:
   # A job groups steps that run together on the same runner.
   check-bats-version:
@@ -33,7 +33,7 @@ jobs:
       # Install the Databricks CLI so Databricks commands are available.
       - uses: databricks/setup-cli@main
       - name: Update Databricks repo
-        # Update the Databricks repo to track the branch that was pushed.
+        # Keep the Databricks repo aligned with the source branch.
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
             echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
@@ -48,7 +48,19 @@ jobs:
             exit 1
           fi
           databricks repos update /Workspace/githubActions --branch "$GITHUB_REF_NAME"
-          
+      - name: Deploy Databricks bundle
+        working-directory: schufa_medallion_pipeline
+        run: |
+          case "$GITHUB_REF_NAME" in
+            main) target=prod ;;
+            dev|test) target="$GITHUB_REF_NAME" ;;
+            *)
+              echo "Unsupported deployment branch: $GITHUB_REF_NAME" >&2
+              exit 1
+              ;;
+          esac
+          databricks bundle deploy -t "$target"
+
       # Credentials are validated in the "Update Databricks repo" step above;
       # if they are missing, that step fails and this one never runs.
       - name: Deliver addOneBronceEntry job
