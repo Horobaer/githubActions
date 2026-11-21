@@ -1,7 +1,12 @@
 name: learn-github-actions
 run-name: ${{ github.actor }} is learning GitHub Actions
-# Start this workflow automatically whenever a commit is pushed.
-on: [push]
+# Deploy the matching Databricks branch whenever one of these branches is pushed.
+on:
+  push:
+    branches:
+      - dev
+      - test
+      - prod
 jobs:
   # A job groups steps that run together on the same runner.
   check-bats-version:
@@ -28,7 +33,7 @@ jobs:
       # Install the Databricks CLI so Databricks commands are available.
       - uses: databricks/setup-cli@main
       - name: Update Databricks repo
-        # Update the Databricks repo to track the main Git branch!
+        # Update the Databricks repo to track the branch that was pushed.
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
             echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
@@ -42,8 +47,8 @@ jobs:
             echo "Missing GitHub Actions secret: DBX_SECRET_FIRSTSERVICEPRINCIPAL"
             exit 1
           fi
-          databricks repos update /Workspace/githubActions --branch main
-
+          databricks repos update /Workspace/githubActions --branch "$GITHUB_REF_NAME"
+          
       # Credentials are validated in the "Update Databricks repo" step above;
       # if they are missing, that step fails and this one never runs.
       - name: Deliver addOneBronceEntry job
