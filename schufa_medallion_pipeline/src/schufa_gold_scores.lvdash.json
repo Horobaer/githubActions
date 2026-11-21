@@ -1,0 +1,1385 @@
+{
+  "datasets": [
+    {
+      "name": "persons",
+      "displayName": "Person Scores (Gold)",
+      "queryLines": [
+        "SELECT\n",
+        "  person_id,\n",
+        "  CONCAT(person_name, ' (', person_id, ')') AS person,\n",
+        "  person_name,\n",
+        "  city,\n",
+        "  mock_score,\n",
+        "  CASE WHEN mock_score >= 76 THEN '76-100 Good'\n",
+        "       WHEN mock_score >= 51 THEN '51-75 Fair'\n",
+        "       WHEN mock_score >= 26 THEN '26-50 Weak'\n",
+        "       ELSE '0-25 Poor' END AS score_band,\n",
+        "  last_event_at,\n",
+        "  num_score_requests,\n",
+        "  num_contracts,\n",
+        "  num_late_payments,\n",
+        "  num_defaults,\n",
+        "  num_on_time_payments,\n",
+        "  num_late_payments + num_defaults + num_on_time_payments AS num_payment_events,\n",
+        "  num_score_requests + num_contracts + num_late_payments + num_defaults + num_on_time_payments AS num_events_captured,\n",
+        "  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY mock_score) OVER () AS median_score_all,\n",
+        "  total_contract_amount\n",
+        "FROM person_scores"
+      ]
+    },
+    {
+      "name": "event_mix",
+      "displayName": "Event Mix by City and Score Band",
+      "queryLines": [
+        "WITH base AS (\n",
+        "  SELECT city,\n",
+        "    CASE WHEN mock_score >= 76 THEN '76-100 Good'\n",
+        "         WHEN mock_score >= 51 THEN '51-75 Fair'\n",
+        "         WHEN mock_score >= 26 THEN '26-50 Weak'\n",
+        "         ELSE '0-25 Poor' END AS score_band,\n",
+        "    num_score_requests, num_contracts, num_defaults, num_late_payments, num_on_time_payments\n",
+        "  FROM person_scores\n",
+        ")\n",
+        "SELECT city, score_band, 'Score requests' AS event_type, SUM(num_score_requests) AS event_count FROM base GROUP BY city, score_band\n",
+        "UNION ALL SELECT city, score_band, 'Contracts reported', SUM(num_contracts) FROM base GROUP BY city, score_band\n",
+        "UNION ALL SELECT city, score_band, 'Payments', SUM(num_defaults + num_late_payments + num_on_time_payments) FROM base GROUP BY city, score_band\n",
+        "UNION ALL SELECT city, score_band, 'On-time payments', SUM(num_on_time_payments) FROM base GROUP BY city, score_band\n",
+        "UNION ALL SELECT city, score_band, 'Late payments', SUM(num_late_payments) FROM base GROUP BY city, score_band\n",
+        "UNION ALL SELECT city, score_band, 'Defaults', SUM(num_defaults) FROM base GROUP BY city, score_band"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_overview",
+      "displayName": "Score Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "kpi_persons",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Total Persons",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "persons",
+                  "displayName": "Persons",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_avg_score",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "avg_score",
+                      "expression": "AVG(`mock_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Average Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_score",
+                  "displayName": "Avg score (0-100)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_median_score",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "median_score",
+                      "expression": "MAX(`median_score_all`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Median Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "median_score",
+                  "displayName": "Median score (0-100)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_max_score",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "max_score",
+                      "expression": "MAX(`mock_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Highest Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "max_score",
+                  "displayName": "Highest score",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_min_score",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "min_score",
+                      "expression": "MIN(`mock_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Lowest Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "min_score",
+                  "displayName": "Lowest score",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_latest_event",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "latest_event",
+                      "expression": "MAX(`last_event_at`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "title": "Most Recent Event",
+                "showTitle": true
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "latest_event",
+                  "displayName": "Latest activity"
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "score_histogram",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "score_bin",
+                      "expression": "BIN_FLOOR(`mock_score`, 10)"
+                    },
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "histogram",
+              "frame": {
+                "title": "Score Distribution (bins of 10)",
+                "showTitle": true
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "score_bin",
+                  "displayName": "Score",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "persons",
+                  "displayName": "Persons",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "band_donut",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "score_band",
+                      "expression": "`score_band`"
+                    },
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "frame": {
+                "title": "Persons by Score Band",
+                "showTitle": true
+              },
+              "encodings": {
+                "angle": {
+                  "fieldName": "persons",
+                  "displayName": "Persons",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "score_band",
+                  "displayName": "Score band",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "0-25 Poor",
+                        "color": "#C0392B"
+                      },
+                      {
+                        "value": "26-50 Weak",
+                        "color": "#E07B39"
+                      },
+                      {
+                        "value": "51-75 Fair",
+                        "color": "#D4A843"
+                      },
+                      {
+                        "value": "76-100 Good",
+                        "color": "#3A9D5D"
+                      }
+                    ]
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "payment_mix_pie",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "event_mix",
+                  "fields": [
+                    {
+                      "name": "event_type",
+                      "expression": "`event_type`"
+                    },
+                    {
+                      "name": "events",
+                      "expression": "SUM(`event_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`event_type` IN ('On-time payments', 'Late payments', 'Defaults')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "frame": {
+                "title": "Payment Behavior Mix",
+                "showTitle": true
+              },
+              "encodings": {
+                "angle": {
+                  "fieldName": "events",
+                  "displayName": "Payment events",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "event_type",
+                  "displayName": "Payment status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "city_persons_bar",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "title": "Persons by City",
+                "showTitle": true
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 12
+                    },
+                    "sort": {
+                      "by": "measure-reversed",
+                      "measure": {
+                        "fieldName": "persons"
+                      }
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "persons",
+                  "displayName": "Persons",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "city_score_combo",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "avg_score",
+                      "expression": "AVG(`mock_score`)"
+                    },
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "combo",
+              "frame": {
+                "title": "Avg Score vs Persons by City",
+                "showTitle": true
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "fields": [
+                      {
+                        "fieldName": "avg_score",
+                        "displayName": "Avg score"
+                      }
+                    ]
+                  },
+                  "secondary": {
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "fields": [
+                      {
+                        "fieldName": "persons",
+                        "displayName": "Persons"
+                      }
+                    ]
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 9,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "event_volume_bar",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "event_mix",
+                  "fields": [
+                    {
+                      "name": "event_type",
+                      "expression": "`event_type`"
+                    },
+                    {
+                      "name": "events",
+                      "expression": "SUM(`event_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`event_type` IN ('Score requests', 'Contracts reported', 'Payments')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "title": "Total Events by Type",
+                "showTitle": true
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "event_type",
+                  "displayName": "Event type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "measure-reversed",
+                      "measure": {
+                        "fieldName": "events"
+                      }
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "events",
+                  "displayName": "Events",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 9,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "activity_hour_bar",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "hour",
+                      "expression": "DATE_TRUNC('HOUR', `last_event_at`)"
+                    },
+                    {
+                      "name": "persons",
+                      "expression": "COUNT(*)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "title": "Last Activity by Hour",
+                "showTitle": true
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Last event (hour)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "persons",
+                  "displayName": "Persons",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "exposure_scatter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "score_band",
+                      "expression": "`score_band`"
+                    },
+                    {
+                      "name": "total_contract_amount",
+                      "expression": "`total_contract_amount`"
+                    },
+                    {
+                      "name": "mock_score",
+                      "expression": "`mock_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Contract Exposure vs Score",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "850000",
+                      "dataType": "DECIMAL"
+                    }
+                  }
+                }
+              ],
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "total_contract_amount",
+                  "displayName": "Total contract amount (EUR)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "mock_score",
+                  "displayName": "Score",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "score_band",
+                  "displayName": "Score band",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "0-25 Poor",
+                        "color": "#C0392B"
+                      },
+                      {
+                        "value": "26-50 Weak",
+                        "color": "#E07B39"
+                      },
+                      {
+                        "value": "51-75 Fair",
+                        "color": "#D4A843"
+                      },
+                      {
+                        "value": "76-100 Good",
+                        "color": "#3A9D5D"
+                      }
+                    ]
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 15,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "page_leaderboards",
+      "displayName": "Leaderboards & Details",
+      "layout": [
+        {
+          "widget": {
+            "name": "top_scores_bar",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "person",
+                      "expression": "`person`"
+                    },
+                    {
+                      "name": "score",
+                      "expression": "`mock_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "title": "Top 10 Persons by Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "y": {
+                  "fieldName": "person",
+                  "displayName": "Person",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 10
+                    },
+                    "sort": {
+                      "by": "measure-reversed",
+                      "measure": {
+                        "fieldName": "score"
+                      }
+                    }
+                  }
+                },
+                "x": {
+                  "fieldName": "score",
+                  "displayName": "Score",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "bottom_scores_bar",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "person",
+                      "expression": "`person`"
+                    },
+                    {
+                      "name": "score",
+                      "expression": "`mock_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "title": "Bottom 10 Persons by Score",
+                "showTitle": true
+              },
+              "encodings": {
+                "y": {
+                  "fieldName": "person",
+                  "displayName": "Person",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 10
+                    },
+                    "sort": {
+                      "by": "measure",
+                      "measure": {
+                        "fieldName": "score"
+                      }
+                    }
+                  }
+                },
+                "x": {
+                  "fieldName": "score",
+                  "displayName": "Score",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "persons_table",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "person_id",
+                      "expression": "`person_id`"
+                    },
+                    {
+                      "name": "person_name",
+                      "expression": "`person_name`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "score_band",
+                      "expression": "`score_band`"
+                    },
+                    {
+                      "name": "mock_score",
+                      "expression": "`mock_score`"
+                    },
+                    {
+                      "name": "last_event_at",
+                      "expression": "`last_event_at`"
+                    },
+                    {
+                      "name": "num_score_requests",
+                      "expression": "`num_score_requests`"
+                    },
+                    {
+                      "name": "num_contracts",
+                      "expression": "`num_contracts`"
+                    },
+                    {
+                      "name": "total_contract_amount",
+                      "expression": "`total_contract_amount`"
+                    },
+                    {
+                      "name": "num_on_time_payments",
+                      "expression": "`num_on_time_payments`"
+                    },
+                    {
+                      "name": "num_late_payments",
+                      "expression": "`num_late_payments`"
+                    },
+                    {
+                      "name": "num_defaults",
+                      "expression": "`num_defaults`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "frame": {
+                "title": "All Persons (Gold Detail)",
+                "showTitle": true
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "person_id",
+                    "displayName": "Person ID"
+                  },
+                  {
+                    "fieldName": "person_name",
+                    "displayName": "Name"
+                  },
+                  {
+                    "fieldName": "city",
+                    "displayName": "City"
+                  },
+                  {
+                    "fieldName": "score_band",
+                    "displayName": "Score Band"
+                  },
+                  {
+                    "fieldName": "mock_score",
+                    "displayName": "Score",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 0
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "last_event_at",
+                    "displayName": "Last Event"
+                  },
+                  {
+                    "fieldName": "num_score_requests",
+                    "displayName": "Score Requests"
+                  },
+                  {
+                    "fieldName": "num_contracts",
+                    "displayName": "Contracts"
+                  },
+                  {
+                    "fieldName": "total_contract_amount",
+                    "displayName": "Contract Volume (EUR)",
+                    "format": {
+                      "type": "number-currency",
+                      "currencyCode": "EUR",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "num_on_time_payments",
+                    "displayName": "On-time"
+                  },
+                  {
+                    "fieldName": "num_late_payments",
+                    "displayName": "Late"
+                  },
+                  {
+                    "fieldName": "num_defaults",
+                    "displayName": "Defaults"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 12,
+            "height": 10
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "global_filters",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "city_filter",
+            "queries": [
+              {
+                "name": "city_persons_domain",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "city_mix_domain",
+                "query": {
+                  "datasetName": "event_mix",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "frame": {
+                "title": "City",
+                "showTitle": true
+              },
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "city",
+                    "queryName": "city_persons_domain",
+                    "displayName": "City"
+                  },
+                  {
+                    "fieldName": "city",
+                    "queryName": "city_mix_domain",
+                    "displayName": "City"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "band_filter",
+            "queries": [
+              {
+                "name": "band_persons_domain",
+                "query": {
+                  "datasetName": "persons",
+                  "fields": [
+                    {
+                      "name": "score_band",
+                      "expression": "`score_band`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "band_mix_domain",
+                "query": {
+                  "datasetName": "event_mix",
+                  "fields": [
+                    {
+                      "name": "score_band",
+                      "expression": "`score_band`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "frame": {
+                "title": "Score Band",
+                "showTitle": true
+              },
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "score_band",
+                    "queryName": "band_persons_domain",
+                    "displayName": "Score Band"
+                  },
+                  {
+                    "fieldName": "score_band",
+                    "queryName": "band_mix_domain",
+                    "displayName": "Score Band"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#F5F6F8",
+        "dark": "#1B1F24"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#22272E"
+      },
+      "widgetBorderColor": {
+        "light": "#E0E0E0",
+        "dark": "#30363D"
+      },
+      "selectionColor": {
+        "light": "#2272B4",
+        "dark": "#4DA3E8"
+      },
+      "visualizationColors": [
+        "#2272B4",
+        "#E07B39",
+        "#3A9D5D",
+        "#D4A843",
+        "#8E6BBF",
+        "#C0392B"
+      ],
+      "widgetCornerRadius": 8,
+      "fontSettings": {
+        "base": {
+          "fontFamily": "Inter",
+          "fontColor": {
+            "light": "#1F2328",
+            "dark": "#E6EDF3"
+          }
+        }
+      }
+    },
+    "applyModeEnabled": false
+  }
+}

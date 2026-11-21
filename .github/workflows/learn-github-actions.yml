@@ -29,7 +29,6 @@ jobs:
       - uses: databricks/setup-cli@main
       - name: Update Databricks repo
         # Update the Databricks repo to track the main Git branch!
-        # das hier kann als geheimer Chat fungieren - right? HALLO hier spricht JONTE mit Papa
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
             echo "Missing GitHub Actions repository variable: DATABRICKS_HOST"
@@ -49,6 +48,6 @@ jobs:
       # if they are missing, that step fails and this one never runs.
       - name: Deliver addOneBronceEntry job
         # --wait makes the step fail if the job fails.
-        run: databricks jobs run-now --job-id 252738613689179 --wait
+        run: databricks jobs run-now 252738613689179 --wait
 
           

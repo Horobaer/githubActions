@@ -1,13 +1,13 @@
 resources:
   pipelines:
     schufa_medallion_pipeline:
-      name: Schufa Medallion Pipeline
+      name: "Schufa Medallion Pipeline (${bundle.target})"
       configuration:
         "pipelines.trigger.interval": "30 seconds"
       libraries:
         - notebook:
             path: ../src/schufa_medallion_pipeline/Schufa Medallion Pipeline.ipynb
-      catalog: test
+      catalog: ${var.catalog_name}
       channel: CURRENT
       continuous: false
       photon: true

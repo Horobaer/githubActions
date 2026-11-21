@@ -6,6 +6,14 @@ include:
   - resources/*.yml
   - resources/*/*.yml
 
+variables:
+  catalog_name:
+    description: "Catalog for pipeline output and dashboard datasets (overridden per target)."
+    default: dev
+  warehouse_id:
+    description: "SQL warehouse used by the deployed dashboards."
+    default: 3f547abcd8cd0867
+
 targets:
   # The 'dev' target, for development purposes. This target is the default.
   dev:
@@ -13,6 +21,17 @@ targets:
     default: true
     workspace:
       host: https://dbc-7fe5461a-79e4.cloud.databricks.com
+    variables:
+      catalog_name: dev
+
+  # The 'test' target: the incumbent pipeline already publishes to test.schufa_mock,
+  # so deploying this target requires adopting/rebuilding those tables first.
+  test:
+    mode: production
+    workspace:
+      host: https://dbc-7fe5461a-79e4.cloud.databricks.com
+    variables:
+      catalog_name: test
 
   # The 'prod' target, used for production deployment.
   prod:
@@ -21,6 +40,8 @@ targets:
       host: https://dbc-7fe5461a-79e4.cloud.databricks.com
       # We always use /Users/horobaer@gmail.com for all resources to make sure we only have a single copy.
       root_path: /Users/horobaer@gmail.com/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog_name: prod
     run_as:
       # This runs as horobaer@gmail.com in production. We could also use a service principal here,
       # see https://docs.databricks.com/dev-tools/bundles/permissions.html.

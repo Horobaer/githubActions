@@ -1,0 +1,11 @@
+# AI/BI dashboard over the schufa_mock gold layer (see docs/adr/0001-dashboard-bundle-scope.md).
+# Table references in the dashboard JSON are unqualified; dataset_catalog and dataset_schema
+# qualify them per target at deploy time.
+resources:
+  dashboards:
+    schufa_gold_scores:
+      display_name: "Schufa Gold Scores (${bundle.target})"
+      file_path: ../src/schufa_gold_scores.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog_name}
+      dataset_schema: schufa_mock
