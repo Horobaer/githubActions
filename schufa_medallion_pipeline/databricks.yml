@@ -1,4 +1,5 @@
 # Declarative Automation Bundle configuration, more info here: https://docs.databricks.com/en/dev-tools/bundles/settings.html
+# Dev Branch Test
 bundle:
   name: "schufa_medallion_pipeline"
 
