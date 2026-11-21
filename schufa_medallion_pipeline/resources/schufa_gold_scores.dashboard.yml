@@ -1,6 +1,7 @@
 # AI/BI dashboard over the schufa_mock gold layer (see docs/adr/0001-dashboard-bundle-scope.md).
 # Table references in the dashboard JSON are unqualified; dataset_catalog and dataset_schema
-# qualify them per target at deploy time.
+# qualify them per target at deploy time. Dashboards do not support bundle tags; the environment
+# is visible in the display name suffix and via UC tags on the tables/schemas they query.
 resources:
   dashboards:
     schufa_gold_scores:
