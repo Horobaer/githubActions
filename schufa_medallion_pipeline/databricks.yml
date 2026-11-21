@@ -13,6 +13,9 @@ variables:
   warehouse_id:
     description: "SQL warehouse used by the deployed dashboards."
     default: 3f547abcd8cd0867
+  env_label:
+    description: "Environment label used for resource tags (matches the governed 'env' tag values: DEV, TEST, PROD)."
+    default: DEV
 
 targets:
   # The 'dev' target, for development purposes. This target is the default.
@@ -23,6 +26,7 @@ targets:
       host: https://dbc-7fe5461a-79e4.cloud.databricks.com
     variables:
       catalog_name: dev
+      env_label: DEV
 
   # The 'test' target: the incumbent pipeline already publishes to test.schufa_mock,
   # so deploying this target requires adopting/rebuilding those tables first.
@@ -32,6 +36,7 @@ targets:
       host: https://dbc-7fe5461a-79e4.cloud.databricks.com
     variables:
       catalog_name: test
+      env_label: TEST
 
   # The 'prod' target, used for production deployment.
   prod:
@@ -42,6 +47,7 @@ targets:
       root_path: /Users/horobaer@gmail.com/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog_name: prod
+      env_label: PROD
     run_as:
       # This runs as horobaer@gmail.com in production. We could also use a service principal here,
       # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
